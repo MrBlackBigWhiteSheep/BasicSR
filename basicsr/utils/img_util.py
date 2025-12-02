@@ -3,7 +3,46 @@ import math
 import numpy as np
 import os
 import torch
-from torchvision.utils import make_grid
+# from torchvision.utils import make_grid
+
+
+def _get_make_grid():
+    """延迟导入 make_grid，避免 torchvision 版本冲突"""
+    try:
+        from torchvision.utils import make_grid
+        return make_grid
+    except ImportError:
+        # 手动实现简化版
+        def make_grid(tensor, nrow=8, padding=2, normalize=False, range=None, scale_each=False, pad_value=0):
+            if not isinstance(tensor, torch.Tensor):
+                tensor = torch.stack(tensor)
+            if tensor.dim() == 3:
+                tensor = tensor.unsqueeze(0)
+            B, C, H, W = tensor.shape
+            rows = int(B / nrow) + (1 if B % nrow != 0 else 0)
+            grid = torch.full((C, rows * H + (rows - 1) * padding, nrow * W + (nrow - 1) * padding), pad_value)
+            idx = 0
+            for r in range(rows):
+                for c in range(nrow):
+                    if idx >= B:
+                        break
+                    img = tensor[idx]
+                    if normalize:
+                        if range is not None:
+                            img = torch.clamp(img, range[0], range[1])
+                            img = (img - range[0]) / (range[1] - range[0])
+                        else:
+                            min_val, max_val = img.min(), img.max()
+                            if min_val != max_val:
+                                img = (img - min_val) / (max_val - min_val)
+                    h_start = r * (H + padding)
+                    w_start = c * (W + padding)
+                    grid[:, h_start:h_start+H, w_start:w_start+W] = img
+                    idx += 1
+            return grid
+        return make_grid
+
+make_grid = _get_make_grid()
 
 
 def img2tensor(imgs, bgr2rgb=True, float32=True):

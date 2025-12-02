@@ -1,0 +1,94 @@
+name: MambaIR_UIEB
+model_type: MambaIRv2Model
+scale: 1
+num_gpu: 1
+manual_seed: 1234
+
+datasets:
+  train:
+    name: UIEB_train
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB/reference-890
+    dataroot_lq: /data/wa/dataset/UIEB/raw-890
+    io_backend:
+      type: disk
+
+    num_worker_per_gpu: 4
+    use_shuffle: true
+    drop_last: true
+    prefetch_mode: ~
+    gt_size: 256     # patch size
+    batch_size_per_gpu: 1 
+    scale: 1
+    use_flip: true
+    use_rot: true
+
+  val:
+    name: UIEB_val
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB/reference-890
+    dataroot_lq: /data/wa/dataset/UIEB/raw-890
+    io_backend:
+      type: disk
+
+path:
+  root: ./
+  pretrain_network_g: ~
+  strict_load_g: false
+  resume_state: ~
+
+network_g:
+  type: MambaIRv2
+  dim: 8              # 显存敏感项（越小越省显存）
+  n_blocks: 4
+  # 如果继续爆，再给你降级 ultra-low-memory 版本
+
+train:
+  optim_g:
+    type: Adam
+    # lr: !!float 2e-4 # for noise 15
+    lr: !!float 1e-4 # for noise 25/50
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    # milestones: [ 800000, 1200000, 1400000, 1500000 ] # for noise 15
+    milestones: [ 400000, 600000, 700000, 750000 ] # for noise 25/50
+    gamma: 0.5
+
+  # total_iter: 1600000 # for noise 15
+  total_iter: 800000 # for noise 25/50
+  warmup_iter: -1  # no warm up
+
+  # losses
+  pixel_opt:
+    type: CharbonnierLoss
+    loss_weight: 1.0
+    reduction: mean
+    eps: !!float 1e-3
+
+# validation settings
+val:
+  val_freq: !!float 5e3
+  save_img: false
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 200
+  save_checkpoint_freq: !!float 5e3
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500

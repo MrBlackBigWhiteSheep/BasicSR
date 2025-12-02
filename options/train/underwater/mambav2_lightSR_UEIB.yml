@@ -1,0 +1,136 @@
+# general settings for image SR training
+name: MambaIRv2_UIEB_enhance
+model_type: MambaIRv2LightModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  train:
+    task: Restoration
+    name: UIEB
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB/reference-890
+    dataroot_lq: /data/wa/dataset/UIEB/raw-890
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_hflip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 32
+    dataset_enlarge_ratio: 100
+    prefetch_mode: ~
+
+  val:
+    name: UIEB
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_800/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_800/raw-90
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+
+
+network_g:
+  type: MambaIRv2Light
+  upscale: 1
+  in_chans: 3
+  img_size: 64
+  img_range: 1.
+  # embed_dim: 48
+  # d_state: 8
+  # depths: [ 5, 5, 5, 5 ]
+  # num_heads: [ 4, 4, 4, 4 ]
+  # window_size: 16
+  # inner_rank: 32
+  # num_tokens: 64
+  # convffn_kernel_size: 5
+  # mlp_ratio: 1.0
+  # upsampler: ~
+  # resi_connection: '1conv'
+
+  # ★ 显存友好配置
+  embed_dim: 32        # 由 48 → 32，显存下降 ~50%
+  d_state: 8
+  depths: [2, 2, 2, 2] # 由 [5,5,5,5] 大幅缩小
+  num_heads: [2, 2, 2, 2]
+  window_size: 8       # 由 16 → 8，显存立刻减少 4 倍
+  inner_rank: 16       # 降低 Mamba 内部维度
+  num_tokens: 32       # 由 64 → 32（attention 显存砍半）
+
+  convffn_kernel_size: 3
+  mlp_ratio: 0.5
+  upsampler: ~
+  resi_connection: '1conv'
+
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  optim_g:
+    type: Adam
+    #lr: !!float 2e-4
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [250000, 400000, 450000, 475000]
+    #milestones: [5000, 10000, 15000, 20000，25000，30000，35000]
+    gamma: 0.5
+
+  total_iter: 22400
+  warmup_iter: -1  # no warm up
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+
+  ssim_opt:
+    type: SSIMLoss
+    loss_weight: 0.2
+
+# validation settings
+val:
+  val_freq: 280
+  save_img: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+
+
+
+# logging settings
+logger:
+  print_freq: 28
+  save_checkpoint_freq: 280
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500

@@ -1,0 +1,105 @@
+# general settings
+name: train_SwinIR_UIEB
+model_type: SwinIRModel
+scale: 1
+num_gpu: 1
+manual_seed: 123
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: UIEB_train
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB/reference-890
+    dataroot_lq: /data/wa/dataset/UIEB/raw-890
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_hflip: true
+    use_rot: true
+
+    # data loader
+    num_worker_per_gpu: 16
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: UIEB_val
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_800/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_800/raw-90
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: SwinIR
+  upscale: 1             # 水下图像增强不放大，所以保持 1
+  in_chans: 3
+  img_size: 64           # 可以适当加大到 128，如果显存够
+  window_size: 8
+  img_range: 1.
+  depths: [6, 6, 6, 6]  # 正常小型SwinIR深度
+  embed_dim: 180         # 常用标准SwinIR embed_dim
+  num_heads: [6, 6, 6, 6]
+  mlp_ratio: 2.
+  upsampler: 'none'
+  resi_connection: '1conv'
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: false
+  resume_state: ~
+
+# training settings
+train:
+  ema_decay: 0.999
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [50000, 100000, 150000]
+    gamma: 0.5
+
+  total_iter: 178400
+  warmup_iter: -1  # no warm up
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: 2230
+  save_img: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 2230
+  use_tb_logger: true
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
