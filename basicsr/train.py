@@ -12,7 +12,7 @@ from basicsr.models import build_model
 from basicsr.utils import (AvgTimer, MessageLogger, check_resume, get_env_info, get_root_logger, get_time_str,
                            init_tb_logger, init_wandb_logger, make_exp_dirs, mkdir_and_rename, scandir)
 from basicsr.utils.options import copy_opt_file, dict2str, parse_options
-
+from basicsr.models.sr_model import SRModel
 
 def init_tb_loggers(opt):
     # initialize wandb logger before tensorboard logger to allow proper sync
@@ -62,7 +62,7 @@ def create_train_val_dataloader(opt, logger):
         else:
             raise ValueError(f'Dataset phase {phase} is not recognized.')
 
-    return train_loader, train_sampler, val_loaders, total_epochs, total_iters
+    return train_loader, train_sampler, val_loaders, total_epochs, total_iters, num_iter_per_epoch
 
 
 def load_resume_state(opt):
@@ -118,15 +118,16 @@ def train_pipeline(root_path):
 
     # create train and validation dataloaders
     result = create_train_val_dataloader(opt, logger)
-    train_loader, train_sampler, val_loaders, total_epochs, total_iters = result
+    train_loader, train_sampler, val_loaders, total_epochs, total_iters, num_iter_per_epoch = result
 
     # create model
     model = build_model(opt)
     if resume_state:  # resume training
         model.resume_training(resume_state)  # handle optimizers and schedulers
         logger.info(f"Resuming training from epoch: {resume_state['epoch']}, iter: {resume_state['iter']}.")
-        start_epoch = resume_state['epoch']
         current_iter = resume_state['iter']
+        # 旧 state 中的 epoch 可能与当前 batch/world_size 不一致，重新根据 iter 计算起始 epoch
+        start_epoch = current_iter // num_iter_per_epoch
     else:
         start_epoch = 0
         current_iter = 0
@@ -187,7 +188,7 @@ def train_pipeline(root_path):
 
             # validation
             if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0):
-                if len(val_loaders) > 1:
+                if len(val_loaders) > 1 and not isinstance(model, SRModel):
                     logger.warning('Multiple validation datasets are *only* supported by SRModel.')
                 for val_loader in val_loaders:
                     model.validation(val_loader, current_iter, tb_logger, opt['val']['save_img'])

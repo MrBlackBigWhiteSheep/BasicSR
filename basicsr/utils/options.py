@@ -109,6 +109,9 @@ def parse_options(root_path, is_train=True):
 
     # parse yml to dict
     opt = yaml_load(args.opt)
+    # with open(args.opt, mode='r') as f:
+    #         # 使用 safe_load 或者 load 读取 yaml
+    #         opt = yaml.safe_load(f)
 
     # distributed settings
     if args.launcher == 'none':

@@ -1,0 +1,92 @@
+# GENERATE TIME: Tue Jan 13 2026
+# CMD:
+# basicsr/test.py -opt options/test/rain/test_mambarain_rain100l.yml
+
+name: MambaRain_Rain100L_Eval_enhance0104_1
+model_type: MambaWaterModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  # ====================================================
+  # 数据集 1: 训练集 (Rain100L Train) - 用于检查拟合情况
+  # ====================================================
+  test_1:
+    name: Rain100L_Train
+    type: PairedImageDataset
+    
+    # 路径来自你原配置的 train 部分
+    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/train/reference
+    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/train/raw
+    
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    # 【关键】注释掉 gt_size，配合 Python 代码进行全图/自适应切块推理
+    # gt_size: 128
+    
+    use_hflip: false
+    use_rot: false
+
+  # ====================================================
+  # 数据集 2: 测试集 (Rain100L Val/Test) - 用于检查泛化性能
+  # ====================================================
+  test_2:
+    name: Rain100L_Test
+    type: PairedImageDataset
+    
+    # 路径来自你原配置的 val 部分
+    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/val/reference
+    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/val/raw
+    
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+      
+    use_hflip: false
+    use_rot: false
+
+# network structures (保持不变)
+network_g:
+  type: MambaWater
+  upscale: 1
+  in_chans: 3
+  img_size: 128
+  img_range: 1.
+
+  embed_dim: 48        
+  d_state: 16          
+  depths: [2, 4, 4, 2] 
+  num_heads: [4, 4, 4, 4] 
+  window_size: 16      
+  inner_rank: 32
+  num_tokens: 64
+  convffn_kernel_size: 3
+  mlp_ratio: 1.5       
+  
+  upscale: 1
+  upsampler: ~
+  resi_connection: '1conv'
+
+# path
+path:
+  # 【请确认】这里假设你的模型保存在默认路径下，如果文件名不同请修改
+  pretrain_network_g: experiments/MambaRain_Rain100L_enhance0104_1/models/net_g_171400.pth
+  strict_load_g: true
+
+# validation settings
+val:
+  save_img: true       # 开启图片保存
+  suffix: ~            # 不加后缀
+  
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0

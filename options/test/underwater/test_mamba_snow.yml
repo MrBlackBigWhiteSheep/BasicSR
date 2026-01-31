@@ -1,0 +1,93 @@
+# GENERATE TIME: Tue Jan 13 2026
+# CMD:
+# basicsr/test.py -opt options/test/snow/test_mambasnow.yml
+
+name: MambaSnow_csd_Eval_enhance0108_1
+model_type: MambaWaterModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  # ====================================================
+  # 数据集 1: 训练集 (CSD Train) - 用于检查是否拟合
+  # ====================================================
+  test_1:
+    name: CSD_Train
+    type: PairedImageDataset
+    
+    # 直接复用原 train 配置的路径
+    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Train/Gt
+    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Train/Snow
+    
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    # 【关键】注释掉 gt_size 以进行全图推理 (配合之前修改的 Python 代码)
+    # gt_size: 128
+    
+    use_hflip: false
+    use_rot: false
+
+  # ====================================================
+  # 数据集 2: 测试集 (CSD Test) - 用于检查泛化性能
+  # ====================================================
+  test_2:
+    name: CSD_Test
+    type: PairedImageDataset
+    
+    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Test/Gt
+    
+    # 【自动修正】原配置这里写的是 Test/Gt，我改为了 Test/Snow，请确认文件夹是否存在
+    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Test/Snow
+    
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+      
+    use_hflip: false
+    use_rot: false
+
+# network structures (必须与训练配置完全一致)
+network_g:
+  type: MambaWater
+  upscale: 1
+  in_chans: 3
+  img_size: 128
+  img_range: 1.
+
+  embed_dim: 48        
+  d_state: 16          
+  depths: [2, 4, 4, 2] 
+  num_heads: [4, 4, 4, 4] 
+  window_size: 16      
+  inner_rank: 32
+  num_tokens: 64
+  convffn_kernel_size: 3
+  mlp_ratio: 1.5       
+  
+  upscale: 1
+  upsampler: ~
+  resi_connection: '1conv'
+
+# path
+path:
+  # 【请修改】填入你训练好的去雪模型路径
+  pretrain_network_g: experiments/MambaSnow_csd_enhance0108_1/models/net_g_230000.pth
+  strict_load_g: true
+
+# validation settings
+val:
+  save_img: true       # 开启图片保存
+  suffix: ~            # 不加后缀，保持原文件名
+  
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0

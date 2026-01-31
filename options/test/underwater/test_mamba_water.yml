@@ -1,0 +1,91 @@
+# GENERATE TIME: Tue Jan 13 2026
+# CMD:
+# basicsr/test.py -opt options/test/underwater/test_mambawater_all.yml
+
+name: MambaWater_UIEB_Eval_0102_5_256*256
+model_type: MambaWaterModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  # ====================================================
+  # 数据集 1: 训练集 (用于检查拟合程度)
+  # ====================================================
+  test_1:  
+    name: UIEB_Train_800
+    type: PairedImageDataset
+    
+    # 填入你原配置中 train 的路径
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+      
+    # 测试模式通常不裁剪，跑全图。
+    # 如果显存爆炸 (OOM)，请取消下一行的注释，限制尺寸
+    # gt_size: 128 
+    use_hflip: false
+    use_rot: false
+
+  # ====================================================
+  # 数据集 2: 验证/测试集 (用于检查泛化能力)
+  # ====================================================
+  test_2:
+    name: UIEB_Test_90
+    type: PairedImageDataset
+    
+    # 填入你原配置中 val 的路径
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+      
+    use_hflip: false
+    use_rot: false
+
+# network structures
+network_g:
+  type: MambaWater
+  upscale: 1
+  in_chans: 3
+  img_size: 128
+  img_range: 1.
+
+  embed_dim: 48        
+  d_state: 16          
+  depths: [2, 4, 4, 2] 
+  num_heads: [4, 4, 4, 4] 
+  window_size: 16      
+  inner_rank: 32
+  num_tokens: 64
+  convffn_kernel_size: 3
+  mlp_ratio: 1.5       
+  
+  upscale: 1
+  upsampler: ~
+  resi_connection: '1conv'
+
+# path
+path:
+  # 【注意】替换为你训练好的 .pth 路径
+  pretrain_network_g: experiments/MambaWater_UIEB_enhance0102_5/models/net_g_84200.pth
+  strict_load_g: true
+
+# validation settings
+val:
+  center_crop_size: 256  # 中心裁剪尺寸，用于评估时裁剪边缘不稳定区域，设为 null 则不裁剪
+  save_img: true       # 是否保存图片
+  suffix: ~            # 文件后缀
+  
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0

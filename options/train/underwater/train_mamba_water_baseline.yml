@@ -1,0 +1,179 @@
+# GENERATE TIME: Tue Dec 30 11:26:49 2025
+# CMD:
+# basicsr/train.py -opt options/train/underwater/train_mambawater_1.yml
+
+name: MambaWater_UIEB_enhance01018_2
+model_type: MambaWaterModel
+scale: 1
+num_gpu: 2
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  train:
+    task: Restoration
+    name: UIEB
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 128
+    use_hflip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 6
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: UIEB
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    gt_size: 128
+
+network_g:
+  type: MambaWater
+  upscale: 1
+  in_chans: 3
+  img_size: 128
+  img_range: 1.
+
+  embed_dim: 40        # 保持 40
+  d_state: 16
+  depths: [2, 2, 2, 2]
+  
+  # === 必须修改这里 ===
+  num_heads: [4, 4, 4, 4]  # 40 / 4 = 10 (整除！不会报错)
+  # num_heads: [6, 6, 6, 6] <--- 这是报错的原因
+  
+  window_size: 16
+  inner_rank: 32
+  num_tokens: 64
+  convffn_kernel_size: 3
+  mlp_ratio: 1.2
+  
+  upsampler: ~
+  resi_connection: '1conv'
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  use_amp: true   
+  
+  optim_g:
+      type: AdamW             # 【修改】推荐用 AdamW，泛化能力更强
+      lr: !!float 4e-4        # 【微调】配合 AdamW 和 Cosine，4e-4 比较稳
+      weight_decay: !!float 1e-4
+      betas: [0.9, 0.99]
+
+  scheduler:
+      type: CosineAnnealingRestartLR # 【重要修改】SOTA 标配调度器
+      periods: [300000]       # 周期与 total_iter 保持一致
+      restart_weights: [1]
+      eta_min: !!float 1e-7
+
+  total_iter: 300000        # 【核心修改】从 20000 -> 300000。这是发论文的门槛。
+  warmup_iter: -1           # Mamba 有时候需要预热，如果前几百次loss炸了，这里改成 5000
+
+  # losses
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+
+  ssim_opt:
+    type: SSIMLoss
+    loss_weight: 0.2
+  
+  # 【新增/修改】感知损失配置
+  perceptual_opt:
+    type: PerceptualLoss
+    # 1. layer_weights: 对应代码中的 layer_weights 参数
+    #    'conv5_4' 是 VGG19 较深层，关注语义和整体结构，适合去雾/水下增强
+    layer_weights:
+      'conv5_4': 1.0  
+    
+    # 2. vgg_type: 对应 vgg_type，保持默认即可
+    vgg_type: vgg19
+    
+    # 3. use_input_norm: 对应 use_input_norm
+    #    必须为 true。VGG 需要对输入进行 ImageNet 的均值/方差归一化
+    use_input_norm: true
+    
+    # 4. range_norm: 对应 range_norm
+    #    【关键】设为 false。
+    #    你的 datasets 配置里 img_range 是 1.0（即 [0,1]），代码注释说该参数是将 [-1,1] 转为 [0,1]。
+    #    既然你已经是 [0,1]，就不需要转换了。
+    range_norm: false
+    
+    # 5. perceptual_weight: 对应 perceptual_weight
+    #    感知损失的权重，通常设为 1.0 或 0.1（视显存和 L1 Loss 的量级而定）
+    perceptual_weight: 1.0
+    
+    # 6. style_weight: 对应 style_weight
+    #    风格损失权重。如果不希望强制改变纹理风格，设为 0；
+    #    如果水下偏色严重需要强制矫正，可以尝试设为 10.0 或更高
+    style_weight: 0
+
+    criterion: l1
+
+
+# validation settings
+val:
+  val_freq: 500
+  save_img: false
+
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+    # 水下色彩衡量指标
+    uiqm:
+      type: calculate_uiqm
+    uciqe:
+      type: calculate_uciqe
+    # 信息墒
+    entropy:
+      type: calculate_entropy
+    # 感知与自然指标  
+    lpips:
+      type: calculate_lpips
+      net_type: vgg
+      better: lower
+    niqe:
+        type: calculate_niqe
+        crop_border: 0
+        better: lower          # 🚨 越低越好：越低代表越接近“自然图像统计规律”
+
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 500
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29500
