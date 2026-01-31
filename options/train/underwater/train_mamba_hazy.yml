@@ -15,7 +15,6 @@ datasets:
     name: RESIDE_ITS_Train
     type: RESIDEDataset
     dataroot_gt: /data/wa/dataset/low_level_visual/reside/clear
-    # 这里同时包含四个不同参数的雾图文件夹
     dataroot_lq: /data/wa/dataset/low_level_visual/reside/hazy
     filename_tmpl: '{}'
     io_backend:

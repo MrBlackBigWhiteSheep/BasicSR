@@ -35,7 +35,7 @@ datasets:
     name: csd
     type: PairedImageDataset
     dataroot_gt: /data/wa/dataset/low_level_visual/snow/Test/Gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Test/Gt
+    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Test/Snow
     filename_tmpl: '{}'
     io_backend:
       type: disk

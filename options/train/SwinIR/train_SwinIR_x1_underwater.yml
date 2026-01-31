@@ -1,0 +1,114 @@
+# SwinIR x1 image restoration - Underwater
+name: train_SwinIR_x1_underwater_0131
+model_type: SwinIRModel
+scale: 1
+num_gpu: auto
+manual_seed: 0
+
+datasets:
+  train:
+    name: UnderwaterTrain
+    type: PairedImageDataset
+    # TODO: 替换为你的水下训练集路径
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+    meta_info_file: ~
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 96
+    use_hflip: true
+    use_rot: true
+
+    num_worker_per_gpu: 6
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
+
+  val:
+    name: UnderwaterVal
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    io_backend:
+      type: disk
+
+network_g:
+  type: SwinIR
+  upscale: 1
+  in_chans: 3
+  img_size: 48
+  window_size: 8
+  img_range: 1.
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: 'none'
+  resi_connection: '1conv'
+
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+train:
+  ema_decay: 0.999
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: CosineAnnealingRestartLR
+    periods: [100000]
+    restart_weights: [1]
+    eta_min: !!float 1e-7
+
+  total_iter: 100000
+  warmup_iter: -1
+
+  pixel_opt:
+    type: L1Loss
+    loss_weight: 1.0
+    reduction: mean
+
+val:
+  val_freq: 200
+  save_img: false
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+    uiqm:
+      type: calculate_uiqm
+    uciqe:
+      type: calculate_uciqe
+    entropy:
+      type: calculate_entropy
+    lpips:
+      type: calculate_lpips
+      net_type: vgg
+      better: lower
+    niqe:
+        type: calculate_niqe
+        crop_border: 0
+        better: lower
+
+logger:
+  print_freq: 100
+  save_checkpoint_freq: 200
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29500
