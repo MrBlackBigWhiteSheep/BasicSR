@@ -1,4 +1,9 @@
 #!/bin/bash
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+cd "$ROOT_DIR"
 
 # ==== 配置路径：SwinIR x1 图像恢复任务 =====
 swin_train_underwater="options/train/SwinIR/train_SwinIR_x1_underwater.yml"
@@ -55,10 +60,10 @@ case "$MODE" in
     ;;
 
   *)
-    echo "Usage:"
-    echo "  sh run.sh train [gpu_id]    # 训练，例如：sh run.sh train 0"
-    echo "  sh run.sh test [gpu_id]     # 测试，例如：sh run.sh test 1"
-    echo "  默认 GPU ID 为 0"
+  echo "Usage:"
+  echo "  bash scripts/run/run_swin.sh train [task] [gpu_id]"
+  echo "  bash scripts/run/run_swin.sh test  [task] [gpu_id]"
+  echo "  task: underwater|lol|hazy|rain|snow，默认 underwater；GPU 默认 0"
     exit 1
     ;;
 esac

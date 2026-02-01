@@ -1,4 +1,9 @@
 #!/bin/bash
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+cd "$ROOT_DIR"
 
 # ==== 配置路径 Train =====
 train_cfg="options/train/underwater/train_mambav2_lightSR_UEIB.yml"
@@ -67,10 +72,10 @@ case "$MODE" in
     ;;
 
   *)
-    echo "Usage:"
-    echo "  sh run.sh train [gpu_id]    # 训练，例如：sh run.sh train 0"
-    echo "  sh run.sh test [gpu_id]     # 测试，例如：sh run.sh test 1"
-    echo "  默认 GPU ID 为 0"
+  echo "Usage:"
+  echo "  bash scripts/run/run.sh train [gpu_id]"
+  echo "  bash scripts/run/run.sh test  [gpu_id]"
+  echo "  默认 GPU ID 为 0"
     exit 1
     ;;
 esac

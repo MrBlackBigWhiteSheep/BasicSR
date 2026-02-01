@@ -1,7 +1,12 @@
 #!/bin/bash
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+cd "$ROOT_DIR"
 
 # 用法示例 训练水下去噪 Restormer：
-# bash run_Restormer.sh train underwater 0
+# bash scripts/run/run_Restormer.sh train underwater 0
 
 # ==== Restormer x1 图像恢复任务路径 =====
 restormer_train_underwater="options/train/Restormer/train_Restormer_x1_underwater.yml"

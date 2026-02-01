@@ -1,9 +1,14 @@
 #!/bin/bash
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+cd "$ROOT_DIR"
 
 # 用法示例：
-#   bash run_HAT.sh train underwater 0
-#   bash run_HAT.sh train hazy 0,1
-#   bash run_HAT.sh test  lol 0
+#   bash scripts/run/run_HAT.sh train underwater 0
+#   bash scripts/run/run_HAT.sh train hazy 0,1
+#   bash scripts/run/run_HAT.sh test  lol 0
 
 hat_train_underwater="options/train/HAT/train_HAT_x1_underwater.yml"
 hat_train_hazy="options/train/HAT/train_HAT_x1_hazy.yml"

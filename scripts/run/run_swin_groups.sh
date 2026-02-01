@@ -1,11 +1,18 @@
 #!/bin/bash
-# 分组跑 HAT 五个任务，便于在多终端/多卡分批执行
+set -e
+
+SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ROOT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+cd "$ROOT_DIR"
+
+echo "[INFO] All grouped SwinIR tasks completed."
+# 分两组，可在不同终端分别跑：
 # Group0: hazy + rain
 # Group1: underwater + lol + snow
 # 用法：
-#   bash run_HAT_groups.sh group0 <GPU_ID>   # 例如 GPU 0
-#   bash run_HAT_groups.sh group1 <GPU_ID>   # 例如 GPU 2
-# 不传 GPU_ID 默认 0
+#   bash scripts/run/run_swin_groups.sh group0 <GPU_ID>   # 例如 GPU 0
+#   bash scripts/run/run_swin_groups.sh group1 <GPU_ID>   # 例如 GPU 2
+# 如果不指定 GPU_ID，默认 0。
 
 GROUP0=(hazy rain)
 GROUP1=(underwater lol snow)
@@ -15,8 +22,8 @@ GPU=${2:-0}
 
 if [ -z "$GROUP_NAME" ]; then
   echo "Usage:"
-  echo "  bash run_HAT_groups.sh group0 <gpu_id>  # hazy + rain"
-  echo "  bash run_HAT_groups.sh group1 <gpu_id>  # underwater + lol + snow"
+  echo "  bash run_swin_groups.sh group0 <gpu_id>  # hazy + rain"
+  echo "  bash run_swin_groups.sh group1 <gpu_id>  # underwater + lol + snow"
   exit 1
 fi
 
@@ -33,7 +40,7 @@ for T in "${TASKS[@]}"; do
   echo "======================"
   echo "[INFO] Start training task: $T on GPU $GPU"
   echo "======================"
-  bash run_HAT.sh train "$T" "$GPU"
+  bash "$SCRIPT_DIR/run_swin.sh" train "$T" "$GPU"
   status=$?
   if [ $status -ne 0 ]; then
     echo "[ERROR] Task $T failed with code $status. Stop." >&2
@@ -41,7 +48,6 @@ for T in "${TASKS[@]}"; do
   fi
   echo "[INFO] Task $T finished."
   # 可选：sleep 60
-
 done
 
 echo "[INFO] $GROUP_NAME completed."
