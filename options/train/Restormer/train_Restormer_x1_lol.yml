@@ -1,17 +1,16 @@
-# SwinIR x1 image restoration - Underwater
-name: train_SwinIR_x1_underwater_0131
-model_type: SwinIRModel
+# Restormer image restoration - Low-light (LOL)
+name: train_Restormer_x1_lol_0201
+model_type: RestormerModel
 scale: 1
 num_gpu: auto
 manual_seed: 0
 
 datasets:
   train:
-    name: UnderwaterTrain
+    name: LOLTrain
     type: PairedImageDataset
-    # TODO: 替换为你的水下训练集路径
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/high
+    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/low
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -22,41 +21,42 @@ datasets:
     use_rot: true
 
     num_worker_per_gpu: 6
-    batch_size_per_gpu: 4
+    batch_size_per_gpu: 8
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val:
-    name: UnderwaterVal
+    name: LOLVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/high
+    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/low
+    filename_tmpl: '{}'
     io_backend:
       type: disk
+    gt_size: 96
 
 network_g:
-  type: SwinIR
-  upscale: 1
-  in_chans: 3
-  img_size: 48
-  window_size: 8
-  img_range: 1.
-  depths: [6, 6, 6, 6, 6, 6]
-  embed_dim: 180
-  num_heads: [6, 6, 6, 6, 6, 6]
-  mlp_ratio: 2
-  upsampler: 'none'
-  resi_connection: '1conv'
+  type: Restormer
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [4, 6, 6, 8]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2.66
+  bias: false
+  LayerNorm_type: WithBias
+  dual_pixel_task: false
 
 path:
   pretrain_network_g: ~
-  strict_load_g: true
+  strict_load_g: false
   resume_state: ~
 
 train:
   ema_decay: 0.999
   optim_g:
-    type: Adam
+    type: AdamW
     lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
@@ -75,9 +75,18 @@ train:
     loss_weight: 1.0
     reduction: mean
 
+  mixing_augs:
+    mixup: false
+    mixup_beta: 1.2
+    use_identity: false
+
+  use_grad_clip: false
+  grad_clip_norm: 0.01
+
 val:
-  val_freq: 1000
+  val_freq: 200
   save_img: false
+  window_size: 8  # pad to multiple of 8 to satisfy Restormer downsampling
   metrics:
     psnr:
       type: calculate_psnr
@@ -86,10 +95,10 @@ val:
     ssim:
       type: calculate_ssim
       crop_border: 0
-    uiqm:
-      type: calculate_uiqm
-    uciqe:
-      type: calculate_uciqe
+    # uiqm:
+    #   type: calculate_uiqm
+    # uciqe:
+    #   type: calculate_uciqe
     entropy:
       type: calculate_entropy
     lpips:
@@ -97,13 +106,13 @@ val:
       net_type: vgg
       better: lower
     niqe:
-        type: calculate_niqe
-        crop_border: 0
-        better: lower
+      type: calculate_niqe
+      crop_border: 0
+      better: lower
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 1000
+  save_checkpoint_freq: 200
   use_tb_logger: true
   wandb:
     project: ~

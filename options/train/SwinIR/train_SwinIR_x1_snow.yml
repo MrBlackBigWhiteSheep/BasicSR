@@ -75,7 +75,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 200
+  val_freq: 1000
   save_img: false
   metrics:
     psnr:
@@ -102,7 +102,7 @@ val:
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 200
+  save_checkpoint_freq: 1000
   use_tb_logger: true
   wandb:
     project: ~

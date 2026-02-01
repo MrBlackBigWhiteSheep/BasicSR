@@ -1,0 +1,66 @@
+# Restormer underwater enhancement test (UIEB)
+name: Restormer_UIEB_test
+model_type: RestormerModel
+scale: 1
+num_gpu: 1
+manual_seed: 0
+
+datasets:
+  test_1:
+    name: UIEB_Test_90
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    use_hflip: false
+    use_rot: false
+
+network_g:
+  type: Restormer
+  inp_channels: 3
+  out_channels: 3
+  dim: 48
+  num_blocks: [4, 6, 6, 8]
+  num_refinement_blocks: 4
+  heads: [1, 2, 4, 8]
+  ffn_expansion_factor: 2.66
+  bias: false
+  LayerNorm_type: WithBias
+  dual_pixel_task: false
+
+path:
+  # TODO: 替换为已训练好的 Restormer underwater 权重
+  # pretrain_network_g: experiments/Restormer_underwater/models/net_g_latest.pth
+  strict_load_g: false
+
+val:
+  # 若内存吃紧可设置 window_size 以分块推理
+  window_size: 0
+  save_img: true
+  suffix: ~
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+    uiqm:
+      type: calculate_uiqm
+    uciqe:
+      type: calculate_uciqe
+
+logger:
+  print_freq: 50
+  save_checkpoint_freq: 0
+  use_tb_logger: false
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29500
