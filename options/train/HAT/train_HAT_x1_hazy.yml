@@ -1,16 +1,16 @@
-# Restormer image restoration - Low-light (LOL)
-name: train_Restormer_x1_lol_0201
-model_type: RestormerModel
+# HAT x1 image restoration - Hazy (RESIDE/SOTS)
+name: train_HAT_x1_hazy_0201
+model_type: HATModel
 scale: 1
 num_gpu: auto
 manual_seed: 0
 
 datasets:
   train:
-    name: LOLTrain
-    type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/low
+    name: HazyTrain
+    type: RESIDEDataset
+    dataroot_gt: /data/wa/dataset/low_level_visual/reside/clear
+    dataroot_lq: /data/wa/dataset/low_level_visual/reside/hazy
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -21,36 +21,51 @@ datasets:
     use_rot: true
 
     num_worker_per_gpu: 6
-    batch_size_per_gpu: 8
+    batch_size_per_gpu: 2
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
-  val:
-    name: LOLVal
-    type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/low
+  val_1:
+    name: SOTS_indoor
+    type: RESIDEDataset
+    dataroot_gt: /data/wa/dataset/low_level_visual/reside/SOTS/indoor/gt
+    dataroot_lq: /data/wa/dataset/low_level_visual/reside/SOTS/indoor/hazy
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    gt_size: 96
+
+  val_2:
+    name: SOTS_outdoor
+    type: RESIDEDataset
+    dataroot_gt: /data/wa/dataset/low_level_visual/reside/SOTS/outdoor/gt
+    dataroot_lq: /data/wa/dataset/low_level_visual/reside/SOTS/outdoor/hazy
     filename_tmpl: '{}'
     io_backend:
       type: disk
     gt_size: 96
 
 network_g:
-  type: Restormer
-  inp_channels: 3
-  out_channels: 3
-  dim: 48
-  num_blocks: [4, 6, 6, 8]
-  num_refinement_blocks: 4
-  heads: [1, 2, 4, 8]
-  ffn_expansion_factor: 2.66
-  bias: false
-  LayerNorm_type: WithBias
-  dual_pixel_task: false
+  type: HAT
+  upscale: 1
+  in_chans: 3
+  img_size: 64
+  window_size: 8
+  compress_ratio: 3
+  squeeze_factor: 30
+  conv_scale: 0.01
+  overlap_ratio: 0.5
+  img_range: 1.
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
+  mlp_ratio: 2
+  upsampler: ''   # no upsampling, scale=1 enhancement
+  resi_connection: '1conv'
 
 path:
   pretrain_network_g: ~
-  strict_load_g: false
+  strict_load_g: true
   resume_state: ~
 
 train:
@@ -75,18 +90,10 @@ train:
     loss_weight: 1.0
     reduction: mean
 
-  mixing_augs:
-    mixup: false
-    mixup_beta: 1.2
-    use_identity: false
-
-  use_grad_clip: false
-  grad_clip_norm: 0.01
-
 val:
   val_freq: 2000
   save_img: false
-  window_size: 8  # pad to multiple of 8 to satisfy Restormer downsampling
+  window_size: 8
   metrics:
     psnr:
       type: calculate_psnr
@@ -95,10 +102,6 @@ val:
     ssim:
       type: calculate_ssim
       crop_border: 0
-    # uiqm:
-    #   type: calculate_uiqm
-    # uciqe:
-    #   type: calculate_uciqe
     entropy:
       type: calculate_entropy
     lpips:
