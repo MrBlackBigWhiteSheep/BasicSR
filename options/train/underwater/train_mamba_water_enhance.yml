@@ -14,8 +14,8 @@ datasets:
     task: Restoration
     name: UIEB
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/Cleand_uie_data/Cleaned_UIEB/split/train/reference
-    dataroot_lq: /data/wa/dataset/Cleand_uie_data/Cleaned_UIEB/split/train/raw
+  dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-800
+  dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-800
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -34,8 +34,8 @@ datasets:
   val:
     name: UIEB
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/Cleand_uie_data/Cleaned_UIEB/split/val/reference
-    dataroot_lq: /data/wa/dataset/Cleand_uie_data/Cleaned_UIEB/split/val/raw
+    dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-90
     filename_tmpl: '{}'
     io_backend:
       type: disk

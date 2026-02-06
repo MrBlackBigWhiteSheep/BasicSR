@@ -9,8 +9,8 @@ datasets:
   train:
     name: SnowTrain
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Train/Gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Train/Snow
+    dataroot_gt: /data/wa/dataset/low_vision_task/snow/Train/Gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/snow/Train/Snow
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val:
     name: SnowVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Test/Gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Test/Snow
+    dataroot_gt: /data/wa/dataset/low_vision_task/snow/Test/Gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/snow/Test/Snow
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -104,11 +104,13 @@ val:
     lpips:
       type: calculate_lpips
       net_type: vgg
+      device: cuda
       better: lower
     niqe:
       type: calculate_niqe
       crop_border: 0
       better: lower
+      safe: true
 
 logger:
   print_freq: 100

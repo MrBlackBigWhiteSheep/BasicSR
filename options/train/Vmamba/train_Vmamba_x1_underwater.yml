@@ -1,57 +1,65 @@
-# Stage 1: LSUI + UFO 联合预训练
-name: MambaWater_Stage1_Pretrain_0118
-model_type: MambaWaterModel
+# Vmamba (Mamber32) x1 image enhancement - Underwater (UIEB)
+name: train_Vmamba_x1_underwater_0201
+model_type: VmambaModel
 scale: 1
-num_gpu: 2
-manual_seed: 10
+num_gpu: auto
+manual_seed: 0
 
 datasets:
-
-  train: # 名字无所谓，关键是结构
-    name: Mix_LSUI_UFO
+  train:
+    name: UnderwaterTrain
     type: PairedImageDataset
-    # 指向你合并后的文件夹
   dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-800
   dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-800
-    
+    filename_tmpl: '{}'
     io_backend:
       type: disk
-    gt_size: 128
+
+    gt_size: 64
     use_hflip: true
     use_rot: true
-    num_worker_per_gpu: 4
-    batch_size_per_gpu: 6
+
+    num_worker_per_gpu: 0
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 1
+    prefetch_mode: ~
 
   val:
-    name: UIEB_Val
+    name: UnderwaterVal
     type: PairedImageDataset
     dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-90
     dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-90
+    filename_tmpl: '{}'
     io_backend:
       type: disk
+    gt_size: 64
 
 network_g:
-  type: MambaWater
+  type: Mamber32
   upscale: 1
   in_chans: 3
   img_size: 128
   img_range: 1.
-  embed_dim: 40
-  d_state: 16
-  depths: [2, 2, 2, 2]
-  num_heads: [4, 4, 4, 4]
-  window_size: 16
-  inner_rank: 32
-  num_tokens: 64
+
+  embed_dim: 24
+  d_state: 4
+  depths: [1, 1, 1, 1]
+  num_heads: [2, 2, 2, 2]
+  window_size: 8
+  inner_rank: 16
+  num_tokens: 32
   convffn_kernel_size: 3
-  mlp_ratio: 1.2
+  mlp_ratio: 1.0
+  upsampler: ~
   resi_connection: '1conv'
 
 path:
   pretrain_network_g: ~
   strict_load_g: true
+  resume_state: ~
 
 train:
+  use_amp: true
   optim_g:
     type: AdamW
     lr: !!float 4e-4
@@ -60,41 +68,43 @@ train:
 
   scheduler:
     type: CosineAnnealingRestartLR
-    periods: [150000]
+    periods: [100000]
     restart_weights: [1]
     eta_min: !!float 1e-7
 
-  total_iter: 150000
+  total_iter: 100000
   warmup_iter: -1
 
-  # Stage 1: 必须开感知损失，为了学结构
   pixel_opt:
-    type: CharbonnierLoss
+    type: L1Loss
     loss_weight: 1.0
-    eps: !!float 1e-3
-  
-  perceptual_opt:
-    type: PerceptualLoss
-    layer_weights:
-      'conv5_4': 1.0
-    vgg_type: vgg19
-    use_input_norm: true
-    range_norm: false
-    perceptual_weight: 0.1
-    criterion: l1
+    reduction: mean
+
+  # Disable extra losses to save memory
+  ssim_opt: ~
+  perceptual_opt: ~
 
 val:
-  val_freq: 500
+  val_freq: 2000
   save_img: false
   metrics:
     psnr:
       type: calculate_psnr
       crop_border: 0
+      test_y_channel: false
     ssim:
       type: calculate_ssim
       crop_border: 0
+      test_y_channel: false
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 500
+  save_checkpoint_freq: 200
   use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+dist_params:
+  backend: nccl
+  port: 29500

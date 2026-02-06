@@ -59,13 +59,22 @@ def img2tensor(imgs, bgr2rgb=True, float32=True):
     """
 
     def _totensor(img, bgr2rgb, float32):
+        # ensure plain numpy array (avoid subclasses) and contiguous memory
+        img = np.array(img, copy=False)
+        if not isinstance(img, np.ndarray):
+            img = np.asarray(img)
+        if img.ndim == 2:  # grayscale to HWC
+            img = img[:, :, None]
         if img.shape[2] == 3 and bgr2rgb:
             if img.dtype == 'float64':
                 img = img.astype('float32')
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = torch.from_numpy(img.transpose(2, 0, 1))
+        img = np.ascontiguousarray(img).transpose(2, 0, 1)
         if float32:
-            img = img.float()
+            img = img.astype(np.float32, copy=False)
+            img = torch.tensor(img, dtype=torch.float32)
+        else:
+            img = torch.tensor(img)
         return img
 
     if isinstance(imgs, list):
@@ -108,17 +117,16 @@ def tensor2img(tensor, rgb2bgr=True, out_type=np.uint8, min_max=(0, 1)):
         n_dim = _tensor.dim()
         if n_dim == 4:
             img_np = make_grid(_tensor, nrow=int(math.sqrt(_tensor.size(0))), normalize=False).numpy()
-            img_np = img_np.transpose(1, 2, 0)
-            if rgb2bgr:
-                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+            img_np = np.asarray(img_np).transpose(1, 2, 0)
+            if rgb2bgr and img_np.shape[2] == 3:
+                img_np = img_np[:, :, [2, 1, 0]]
         elif n_dim == 3:
-            img_np = _tensor.numpy()
-            img_np = img_np.transpose(1, 2, 0)
+            img_np = np.asarray(_tensor.numpy()).transpose(1, 2, 0)
             if img_np.shape[2] == 1:  # gray image
                 img_np = np.squeeze(img_np, axis=2)
             else:
-                if rgb2bgr:
-                    img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+                if rgb2bgr and img_np.shape[2] == 3:
+                    img_np = img_np[:, :, [2, 1, 0]]
         elif n_dim == 2:
             img_np = _tensor.numpy()
         else:

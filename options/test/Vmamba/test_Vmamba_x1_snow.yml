@@ -1,0 +1,53 @@
+# Vmamba (Mamber32) test - Snow
+name: test_Vmamba_x1_snow
+model_type: VmambaModel
+scale: 1
+num_gpu: 1
+manual_seed: 0
+
+datasets:
+  test:
+    name: SnowTest
+    type: PairedImageDataset
+    dataroot_gt: /data/wa/dataset/low_vision_task/snow/Test/Gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/snow/Test/Snow
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+    use_hflip: false
+    use_rot: false
+
+network_g:
+  type: Mamber32
+  upscale: 1
+  in_chans: 3
+  img_size: 128
+  img_range: 1.
+  embed_dim: 48
+  d_state: 16
+  depths: [2, 4, 4, 2]
+  num_heads: [4, 4, 4, 4]
+  window_size: 16
+  inner_rank: 32
+  num_tokens: 64
+  convffn_kernel_size: 3
+  mlp_ratio: 1.5
+  upsampler: ~
+  resi_connection: '1conv'
+
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+
+val:
+  save_img: true
+  suffix: ~
+  metrics:
+    psnr:
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
+      crop_border: 0
+      test_y_channel: false

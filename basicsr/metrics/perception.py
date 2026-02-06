@@ -300,7 +300,14 @@ def calculate_lpips(img, img2, crop_border=0, input_order='HWC', **kwargs):
     img = img.astype(np.float32) / 255. if img.max() > 1 else img.astype(np.float32)
     img2 = img2.astype(np.float32) / 255. if img2.max() > 1 else img2.astype(np.float32)
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device_opt = kwargs.get('device', None)
+    if device_opt is None:
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    else:
+        if device_opt == 'cuda' and not torch.cuda.is_available():
+            device = torch.device('cpu')
+        else:
+            device = torch.device(device_opt)
 
     img_tensor = img2tensor(img, bgr2rgb=True, float32=True).unsqueeze(0).to(device)
     img2_tensor = img2tensor(img2, bgr2rgb=True, float32=True).unsqueeze(0).to(device)

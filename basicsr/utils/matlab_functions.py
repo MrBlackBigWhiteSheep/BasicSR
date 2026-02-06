@@ -102,12 +102,18 @@ def imresize(img, scale, antialiasing=True):
         Tensor: Output image with shape (c, h, w), [0, 1] range, w/o round.
     """
     squeeze_flag = False
-    if type(img).__module__ == np.__name__:  # numpy type
+    if isinstance(img, np.ndarray):  # numpy type
         numpy_type = True
+        img = np.ascontiguousarray(img)
         if img.ndim == 2:
             img = img[:, :, None]
             squeeze_flag = True
-        img = torch.from_numpy(img.transpose(2, 0, 1)).float()
+        img_chw = np.ascontiguousarray(img.transpose(2, 0, 1))
+        try:
+            img = torch.from_numpy(img_chw).float()
+        except TypeError:
+            # Fallback for rare cases where torch.from_numpy rejects the ndarray
+            img = torch.tensor(img_chw.tolist(), dtype=torch.float32)
     else:
         numpy_type = False
         if img.ndim == 2:

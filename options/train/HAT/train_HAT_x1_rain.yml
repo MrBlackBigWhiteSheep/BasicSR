@@ -9,8 +9,8 @@ datasets:
   train:
     name: RainTrain
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/train/reference
-    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/train/raw
+  dataroot_gt: /data/wa/dataset/low_vision_task/rain/Rain100L/train/reference
+  dataroot_lq: /data/wa/dataset/low_vision_task/rain/Rain100L/train/raw
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val:
     name: RainVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/val/reference
-    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/val/raw
+    dataroot_gt: /data/wa/dataset/low_vision_task/rain/Rain100L/val/reference
+    dataroot_lq: /data/wa/dataset/low_vision_task/rain/Rain100L/val/raw
     filename_tmpl: '{}'
     io_backend:
       type: disk

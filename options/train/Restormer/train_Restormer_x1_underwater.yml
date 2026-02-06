@@ -9,8 +9,8 @@ datasets:
   train:
     name: UnderwaterTrain
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+  dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-800
+  dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-800
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val:
     name: UnderwaterVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+    dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-90
+    dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-90
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -97,20 +97,22 @@ val:
     ssim:
       type: calculate_ssim
       crop_border: 0
-    # uiqm:
-    #   type: calculate_uiqm
-    # uciqe:
-    #   type: calculate_uciqe
+    uiqm:
+      type: calculate_uiqm
+    uciqe:
+      type: calculate_uciqe
     entropy:
       type: calculate_entropy
     lpips:
       type: calculate_lpips
       net_type: vgg
+      device: cuda
       better: lower
     niqe:
       type: calculate_niqe
       crop_border: 0
       better: lower
+      safe: true
 
 logger:
   print_freq: 100

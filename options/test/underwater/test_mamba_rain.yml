@@ -18,8 +18,8 @@ datasets:
     type: PairedImageDataset
     
     # 路径来自你原配置的 train 部分
-    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/train/reference
-    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/train/raw
+  dataroot_gt: /data/wa/dataset/low_vision_task/rain/Rain100L/val/reference
+  dataroot_lq: /data/wa/dataset/low_vision_task/rain/Rain100L/val/raw
     
     filename_tmpl: '{}'
     io_backend:
@@ -39,8 +39,8 @@ datasets:
     type: PairedImageDataset
     
     # 路径来自你原配置的 val 部分
-    dataroot_gt: /data/wa/dataset/low_level_visual/rain/Rain100L/val/reference
-    dataroot_lq: /data/wa/dataset/low_level_visual/rain/Rain100L/val/raw
+  dataroot_gt: /data/wa/dataset/low_vision_task/rain/Rain100L/val/reference
+  dataroot_lq: /data/wa/dataset/low_vision_task/rain/Rain100L/val/raw
     
     filename_tmpl: '{}'
     io_backend:

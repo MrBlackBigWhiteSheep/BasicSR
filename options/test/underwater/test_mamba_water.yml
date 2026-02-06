@@ -18,8 +18,8 @@ datasets:
     type: PairedImageDataset
     
     # 填入你原配置中 train 的路径
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-800
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-800
+  dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-90
+  dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-90
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -38,8 +38,8 @@ datasets:
     type: PairedImageDataset
     
     # 填入你原配置中 val 的路径
-    dataroot_gt: /data/wa/dataset/UIEB_09/reference-90
-    dataroot_lq: /data/wa/dataset/UIEB_09/raw-90
+  dataroot_gt: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/reference-90
+  dataroot_lq: /data/wa/dataset/low_vision_task/UIE/A_data_spil/UIEB_09/raw-90
     filename_tmpl: '{}'
     io_backend:
       type: disk

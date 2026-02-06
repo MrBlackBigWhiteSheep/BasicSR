@@ -18,8 +18,8 @@ datasets:
     type: PairedImageDataset
     
     # 路径来自原 train 配置
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/low
+  dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/high
+  dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/low
     
     filename_tmpl: '{}'
     io_backend:
@@ -39,8 +39,8 @@ datasets:
     type: PairedImageDataset
     
     # 路径来自原 val 配置
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/low
+  dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/high
+  dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/low
     
     filename_tmpl: '{}'
     io_backend:

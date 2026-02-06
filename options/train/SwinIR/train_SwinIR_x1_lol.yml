@@ -9,8 +9,8 @@ datasets:
   train:
     name: LOLTrain
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/low
+    dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/our485/high
+    dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/our485/low
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val:
     name: LOLVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/low
+    dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/high
+    dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/low
     io_backend:
       type: disk
 
@@ -75,7 +75,7 @@ train:
     reduction: mean
 
 val:
-  val_freq: 1000
+  val_freq: 2000
   save_img: false
   metrics:
     psnr:
@@ -85,10 +85,10 @@ val:
     ssim:
       type: calculate_ssim
       crop_border: 0
-    uiqm:
-      type: calculate_uiqm
-    uciqe:
-      type: calculate_uciqe
+    # uiqm:
+    #   type: calculate_uiqm
+    # uciqe:
+    #   type: calculate_uciqe
     entropy:
       type: calculate_entropy
     lpips:
@@ -96,13 +96,13 @@ val:
       net_type: vgg
       better: lower
     niqe:
-        type: calculate_niqe
-        crop_border: 0
-        better: lower
+      type: calculate_niqe
+      crop_border: 0
+      better: lower
 
 logger:
   print_freq: 100
-  save_checkpoint_freq: 1000
+  save_checkpoint_freq: 2000
   use_tb_logger: true
   wandb:
     project: ~

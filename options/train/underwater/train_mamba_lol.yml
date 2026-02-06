@@ -14,8 +14,8 @@ datasets:
     task: Restoration
     name: UIEB
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/our485/low
+  dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/our485/high
+  dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/our485/low
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -34,8 +34,8 @@ datasets:
   val:
     name: UIEB
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/high
-    dataroot_lq: /data/wa/dataset/low_level_visual/lowlight/LOLdataset/eval15/low
+    dataroot_gt: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/high
+    dataroot_lq: /data/wa/dataset/low_vision_task/lowlight/LOLdataset/eval15/low
     filename_tmpl: '{}'
     io_backend:
       type: disk

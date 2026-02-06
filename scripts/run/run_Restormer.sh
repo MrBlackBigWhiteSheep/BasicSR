@@ -50,10 +50,10 @@ case "$MODE" in
         --nproc_per_node=$NUM_GPUS \
         --master_port=4322 \
         --use_env \
-        basicsr/train.py -opt $TrainConfig --launcher pytorch --auto_resume
+        basicsr/train.py -opt $TrainConfig --launcher pytorch
     else
       # === 单卡模式 ===
-      CUDA_VISIBLE_DEVICES=$GPU_ID python basicsr/train.py -opt $TrainConfig --auto_resume
+      CUDA_VISIBLE_DEVICES=$GPU_ID python basicsr/train.py -opt $TrainConfig
     fi
     ;;
 

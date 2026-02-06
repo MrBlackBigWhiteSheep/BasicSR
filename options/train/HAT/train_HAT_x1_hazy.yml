@@ -9,8 +9,8 @@ datasets:
   train:
     name: HazyTrain
     type: RESIDEDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/reside/clear
-    dataroot_lq: /data/wa/dataset/low_level_visual/reside/hazy
+  dataroot_gt: /data/wa/dataset/low_vision_task/reside/clear
+  dataroot_lq: /data/wa/dataset/low_vision_task/reside/hazy
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val_1:
     name: SOTS_indoor
     type: RESIDEDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/reside/SOTS/indoor/gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/reside/SOTS/indoor/hazy
+    dataroot_gt: /data/wa/dataset/low_vision_task/reside/SOTS/indoor/gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/reside/SOTS/indoor/hazy
     filename_tmpl: '{}'
     io_backend:
       type: disk
@@ -38,8 +38,8 @@ datasets:
   val_2:
     name: SOTS_outdoor
     type: RESIDEDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/reside/SOTS/outdoor/gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/reside/SOTS/outdoor/hazy
+    dataroot_gt: /data/wa/dataset/low_vision_task/reside/SOTS/outdoor/gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/reside/SOTS/outdoor/hazy
     filename_tmpl: '{}'
     io_backend:
       type: disk

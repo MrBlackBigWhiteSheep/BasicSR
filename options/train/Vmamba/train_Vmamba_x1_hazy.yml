@@ -1,6 +1,6 @@
-# SwinIR x1 image restoration - Hazy
-name: train_SwinIR_x1_hazy_0131
-model_type: SwinIRModel
+# Vmamba (Mamber32) x1 image restoration - Hazy (RESIDE/SOTS)
+name: train_Vmamba_x1_hazy_0201
+model_type: VmambaModel
 scale: 1
 num_gpu: auto
 manual_seed: 0
@@ -9,21 +9,20 @@ datasets:
   train:
     name: HazyTrain
     type: RESIDEDataset
-    dataroot_gt: /data/wa/dataset/low_vision_task/reside/clear
-    dataroot_lq: /data/wa/dataset/low_vision_task/reside/hazy
-    meta_info_file: ~
+  dataroot_gt: /data/wa/dataset/low_vision_task/reside/clear
+  dataroot_lq: /data/wa/dataset/low_vision_task/reside/hazy
     filename_tmpl: '{}'
     io_backend:
       type: disk
 
-    gt_size: 96
-    use_hflip: true
-    use_rot: true
+  gt_size: 64
+  use_hflip: true
+  use_rot: true
 
-    num_worker_per_gpu: 6
-    batch_size_per_gpu: 4
-    dataset_enlarge_ratio: 1
-    prefetch_mode: ~
+  num_worker_per_gpu: 4
+  batch_size_per_gpu: 5
+  dataset_enlarge_ratio: 1
+  prefetch_mode: ~
 
   val_1:
     name: SOTS_indoor
@@ -33,7 +32,7 @@ datasets:
     filename_tmpl: '{}'
     io_backend:
       type: disk
-    gt_size: 96
+    gt_size: 128
 
   val_2:
     name: SOTS_outdoor
@@ -43,20 +42,25 @@ datasets:
     filename_tmpl: '{}'
     io_backend:
       type: disk
-    gt_size: 96
+    gt_size: 128
 
 network_g:
-  type: SwinIR
+  type: Mamber32
   upscale: 1
   in_chans: 3
-  img_size: 48
-  window_size: 8
+  img_size: 128
   img_range: 1.
-  depths: [6, 6, 6, 6, 6, 6]
-  embed_dim: 180
-  num_heads: [6, 6, 6, 6, 6, 6]
-  mlp_ratio: 2
-  upsampler: 'none'
+
+  embed_dim: 24
+  d_state: 4
+  depths: [1, 1, 1, 1]
+  num_heads: [2, 2, 2, 2]
+  window_size: 8
+  inner_rank: 16
+  num_tokens: 32
+  convffn_kernel_size: 3
+  mlp_ratio: 1.0
+  upsampler: ~
   resi_connection: '1conv'
 
 path:
@@ -65,11 +69,11 @@ path:
   resume_state: ~
 
 train:
-  ema_decay: 0.999
+  use_amp: true
   optim_g:
-    type: Adam
-    lr: !!float 2e-4
-    weight_decay: 0
+    type: AdamW
+    lr: !!float 4e-4
+    weight_decay: !!float 1e-4
     betas: [0.9, 0.99]
 
   scheduler:
@@ -85,6 +89,10 @@ train:
     type: L1Loss
     loss_weight: 1.0
     reduction: mean
+
+  # Disable extra losses to reduce memory/overhead
+  ssim_opt: ~
+  perceptual_opt: ~
 
 val:
   val_freq: 2000

@@ -9,8 +9,8 @@ datasets:
   train:
     name: SnowTrain
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Train/Gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Train/Snow
+    dataroot_gt: /data/wa/dataset/low_vision_task/snow/Train/Gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/snow/Train/Snow
     meta_info_file: ~
     filename_tmpl: '{}'
     io_backend:
@@ -28,8 +28,8 @@ datasets:
   val:
     name: SnowVal
     type: PairedImageDataset
-    dataroot_gt: /data/wa/dataset/low_level_visual/snow/Test/Gt
-    dataroot_lq: /data/wa/dataset/low_level_visual/snow/Test/Snow
+    dataroot_gt: /data/wa/dataset/low_vision_task/snow/Test/Gt
+    dataroot_lq: /data/wa/dataset/low_vision_task/snow/Test/Snow
     io_backend:
       type: disk
 
@@ -85,10 +85,10 @@ val:
     ssim:
       type: calculate_ssim
       crop_border: 0
-    uiqm:
-      type: calculate_uiqm
-    uciqe:
-      type: calculate_uciqe
+    # uiqm:
+    #   type: calculate_uiqm
+    # uciqe:
+    #   type: calculate_uciqe
     entropy:
       type: calculate_entropy
     lpips:
@@ -96,9 +96,9 @@ val:
       net_type: vgg
       better: lower
     niqe:
-        type: calculate_niqe
-        crop_border: 0
-        better: lower
+      type: calculate_niqe
+      crop_border: 0
+      better: lower
 
 logger:
   print_freq: 100

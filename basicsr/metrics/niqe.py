@@ -2,8 +2,8 @@ import cv2
 import math
 import numpy as np
 import os
-from scipy.ndimage import convolve
 from scipy.special import gamma
+import torch
 
 from basicsr.metrics.metric_util import reorder_image, to_y_channel
 from basicsr.utils.matlab_functions import imresize
@@ -65,6 +65,21 @@ def compute_feature(block):
     return feat
 
 
+def _conv2d_same(img, kernel):
+    """2D convolution with reflect padding to mimic ndimage.convolve(mode='nearest')."""
+    img = np.asarray(img)
+    kernel = np.asarray(kernel)
+    if img.size == 0:
+        return img
+    if img.dtype != np.float32:
+        img = img.astype(np.float32)
+    if kernel.dtype != np.float32:
+        kernel = kernel.astype(np.float32)
+    img = np.ascontiguousarray(img)
+    kernel = np.ascontiguousarray(kernel)
+    return cv2.filter2D(img, -1, kernel, borderType=cv2.BORDER_REPLICATE)
+
+
 def niqe(img, mu_pris_param, cov_pris_param, gaussian_window, block_size_h=96, block_size_w=96):
     """Calculate NIQE (Natural Image Quality Evaluator) metric.
 
@@ -104,8 +119,8 @@ def niqe(img, mu_pris_param, cov_pris_param, gaussian_window, block_size_h=96, b
 
     distparam = []  # dist param is actually the multiscale features
     for scale in (1, 2):  # perform on two scales (1, 2)
-        mu = convolve(img, gaussian_window, mode='nearest')
-        sigma = np.sqrt(np.abs(convolve(np.square(img), gaussian_window, mode='nearest') - np.square(mu)))
+        mu = _conv2d_same(img, gaussian_window)
+        sigma = np.sqrt(np.abs(_conv2d_same(np.square(img), gaussian_window) - np.square(mu)))
         # normalize, as in Eq. 1 in the paper
         img_nomalized = (img - mu) / (sigma + 1)
 
@@ -132,13 +147,56 @@ def niqe(img, mu_pris_param, cov_pris_param, gaussian_window, block_size_h=96, b
     cov_distparam = np.cov(distparam_no_nan, rowvar=False)
 
     # compute niqe quality, Eq. 10 in the paper
-    invcov_param = np.linalg.pinv((cov_pris_param + cov_distparam) / 2)
+    cov_mean = (cov_pris_param + cov_distparam) / 2
+    cov_t = torch.from_numpy(cov_mean).to(torch.float32)
+    invcov_param = torch.linalg.pinv(cov_t).cpu().numpy()
     quality = np.matmul(
         np.matmul((mu_pris_param - mu_distparam), invcov_param), np.transpose((mu_pris_param - mu_distparam)))
 
     quality = np.sqrt(quality)
     quality = float(np.squeeze(quality))
     return quality
+
+
+def _calculate_niqe_core(img, crop_border, input_order='HWC', convert_to='y'):
+    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+    # we use the official params estimated from the pristine dataset.
+    niqe_pris_params = np.load(os.path.join(ROOT_DIR, 'niqe_pris_params.npz'))
+    mu_pris_param = niqe_pris_params['mu_pris_param']
+    cov_pris_param = niqe_pris_params['cov_pris_param']
+    gaussian_window = niqe_pris_params['gaussian_window']
+
+    img = img.astype(np.float32)
+    if input_order != 'HW':
+        img = reorder_image(img, input_order=input_order)
+        if convert_to == 'y':
+            img = to_y_channel(img)
+        elif convert_to == 'gray':
+            img = cv2.cvtColor(img / 255., cv2.COLOR_BGR2GRAY) * 255.
+        img = np.squeeze(img)
+
+    if crop_border != 0:
+        img = img[crop_border:-crop_border, crop_border:-crop_border]
+
+    # if image is too small, return NaN to avoid crashes in downstream ops
+    h, w = img.shape[:2]
+    if h < 96 or w < 96:
+        return float('nan')
+
+    # round is necessary for being consistent with MATLAB's result
+    img = img.round()
+
+    niqe_result = niqe(img, mu_pris_param, cov_pris_param, gaussian_window)
+
+    return niqe_result
+
+
+def _niqe_worker(img, crop_border, input_order, convert_to, q):
+    try:
+        res = _calculate_niqe_core(img, crop_border, input_order=input_order, convert_to=convert_to)
+        q.put((True, res))
+    except Exception:
+        q.put((False, None))
 
 
 @METRIC_REGISTRY.register()
@@ -172,28 +230,30 @@ def calculate_niqe(img, crop_border, input_order='HWC', convert_to='y', **kwargs
     Returns:
         float: NIQE result.
     """
-    ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-    # we use the official params estimated from the pristine dataset.
-    niqe_pris_params = np.load(os.path.join(ROOT_DIR, 'niqe_pris_params.npz'))
-    mu_pris_param = niqe_pris_params['mu_pris_param']
-    cov_pris_param = niqe_pris_params['cov_pris_param']
-    gaussian_window = niqe_pris_params['gaussian_window']
-
     img = img.astype(np.float32)
-    if input_order != 'HW':
-        img = reorder_image(img, input_order=input_order)
-        if convert_to == 'y':
-            img = to_y_channel(img)
-        elif convert_to == 'gray':
-            img = cv2.cvtColor(img / 255., cv2.COLOR_BGR2GRAY) * 255.
-        img = np.squeeze(img)
 
-    if crop_border != 0:
-        img = img[crop_border:-crop_border, crop_border:-crop_border]
+    # reduce OpenCV thread usage to avoid potential native crashes
+    try:
+        cv2.setNumThreads(0)
+    except Exception:
+        pass
 
-    # round is necessary for being consistent with MATLAB's result
-    img = img.round()
+    safe = kwargs.get('safe', False)
+    timeout = float(kwargs.get('timeout', 30))
+    if safe:
+        from multiprocessing import get_context
+        ctx = get_context('spawn')
+        q = ctx.Queue(1)
+        p = ctx.Process(target=_niqe_worker, args=(img, crop_border, input_order, convert_to, q))
+        p.start()
+        p.join(timeout)
+        if p.is_alive():
+            p.terminate()
+            p.join()
+            return float('nan')
+        if p.exitcode != 0 or q.empty():
+            return float('nan')
+        ok, res = q.get()
+        return res if ok else float('nan')
 
-    niqe_result = niqe(img, mu_pris_param, cov_pris_param, gaussian_window)
-
-    return niqe_result
+    return _calculate_niqe_core(img, crop_border, input_order=input_order, convert_to=convert_to)

@@ -219,7 +219,9 @@ class RestormerModel(BaseModel):
             from tqdm import tqdm
             pbar = tqdm(total=len(dataloader), unit='image')
 
+        num_samples = 0
         for idx, val_data in enumerate(dataloader):
+            num_samples += 1
             metric_data = dict()
             img_name = osp.splitext(osp.basename(val_data['lq_path'][0]))[0]
             self.feed_data(val_data)
@@ -256,9 +258,9 @@ class RestormerModel(BaseModel):
         if use_pbar:
             pbar.close()
 
-        if with_metrics:
+        if with_metrics and num_samples > 0:
             for metric in self.metric_results.keys():
-                self.metric_results[metric] /= (idx + 1)
+                self.metric_results[metric] /= num_samples
                 self._update_best_metric_result(dataset_name, metric, self.metric_results[metric], current_iter)
             self._log_validation_metric_values(current_iter, dataset_name, tb_logger)
 
@@ -281,9 +283,13 @@ class RestormerModel(BaseModel):
     def _log_validation_metric_values(self, current_iter, dataset_name, tb_logger):
         log_str = f'Validation {dataset_name}\n'
         for metric, value in self.metric_results.items():
-            log_str += f'	 # {metric}: {value:.4f}\n'
+            log_str += f'\t # {metric}: {value:.4f}'
+            if hasattr(self, 'best_metric_results'):
+                log_str += (f'\tBest: {self.best_metric_results[dataset_name][metric]["val"]:.4f} @ '
+                            f'{self.best_metric_results[dataset_name][metric]["iter"]} iter')
+            log_str += '\n'
             if tb_logger:
-                tb_logger.add_scalar(f'metrics/{metric}', value, current_iter)
+                tb_logger.add_scalar(f'metrics/{dataset_name}/{metric}', value, current_iter)
         logger = get_root_logger()
         logger.info(log_str)
 
